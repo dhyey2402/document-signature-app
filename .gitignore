@@ -1,0 +1,17 @@
+backend/venv/
+frontend/node_modules/
+
+__pycache__/
+*.pyc
+*.pyo
+
+.env
+
+dist/
+build/
+
+.vscode/
+.idea/
+
+.coverage
+.pytest_cache/
