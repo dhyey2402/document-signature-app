@@ -17,55 +17,118 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../co
 import { Badge } from "../components/ui/Badge";
 import { DashboardLayout } from "../components/layout/DashboardLayout";
 
-const stats = [
-  { title: "Candidate Documents", value: "142", icon: FileText, change: "+12%" },
-  { title: "Pending Signatures", value: "28", icon: Clock, change: "-4%" },
-  { title: "Completed", value: "114", icon: CheckCircle, change: "+18%" },
-  { title: "Active Candidates", value: "45", icon: Users, change: "+7%" },
-];
-
-const recentActivity = [
-  { id: 1, user: "Sarah Jenkins", action: "signed", document: "Offer Letter - Q3", time: "2 hours ago", status: "completed" },
-  { id: 2, user: "Michael Chen", action: "viewed", document: "NDA Agreement", time: "4 hours ago", status: "pending" },
-  { id: 3, user: "Emily Davis", action: "signed", document: "Employee Handbook", time: "Yesterday", status: "completed" },
-  { id: 4, user: "James Wilson", action: "received", document: "Contract Renewal", time: "Yesterday", status: "pending" },
-];
+import { useEffect, useState } from "react";
+import toast from "react-hot-toast";
+import { getDocuments } from "../services/documentService";
 
 function Dashboard() {
   const { user } = useContext(AuthContext);
+
+
+  const [documents, setDocuments] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const fetchDocuments = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await getDocuments();
+      setDocuments(res.data);
+    } catch (e) {
+      setError("Failed to load dashboard data.");
+      toast.error("Failed to load dashboard data.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchDocuments();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const totalDocuments = documents.length;
+  const pendingDocuments = documents.filter((d) =>
+    ["draft", "pending"].includes(String(d.status || "").toLowerCase())
+  ).length;
+  const completedDocuments = documents.filter(
+    (d) => String(d.status || "").toLowerCase() === "signed"
+  ).length;
+  const rejectedDocuments = documents.filter(
+    (d) => String(d.status || "").toLowerCase() === "rejected"
+  ).length;
+
+  const recentUploads = [...documents]
+    .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))
+    .slice(0, 5);
+
+  const recentActivity = recentUploads.map((doc) => ({
+    id: doc.id,
+    user: "User",
+    action: "uploaded",
+    document: doc.title,
+    time: doc.created_at ? new Date(doc.created_at).toLocaleString() : "—",
+    status: String(doc.status || "draft").toLowerCase() === "signed" ? "completed" : "pending",
+  }));
+
 
   return (
     <DashboardLayout>
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">Recruitment Dashboard</h1>
-          <p className="text-slate-500 mt-1">Welcome back. Here's your hiring pipeline today.</p>
+          <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">Document Dashboard</h1>
+          <p className="text-slate-500 mt-1">Welcome back. Here's your document pipeline today.</p>
         </div>
         <div className="flex items-center gap-3">
           <Button variant="outline" className="hidden sm:flex">
             Download Report
           </Button>
-          <Button>
-            <Plus className="mr-2 h-4 w-4" /> New Document
+          <Button asChild>
+            <Link to="/upload">
+              <Plus className="mr-2 h-4 w-4" /> New Document
+            </Link>
           </Button>
         </div>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-8">
-        {stats.map((stat, i) => (
-          <Card key={i} className="hover:shadow-md transition-shadow">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-slate-500">{stat.title}</CardTitle>
-              <stat.icon className="h-4 w-4 text-slate-400" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stat.value}</div>
-              <p className={`text-xs mt-1 ${stat.change.startsWith('+') ? 'text-success' : 'text-error'}`}>
-                {stat.change} from last month
-              </p>
-            </CardContent>
-          </Card>
-        ))}
+        <Card className="hover:shadow-md transition-shadow">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-slate-500">Total Documents</CardTitle>
+            <FileText className="h-4 w-4 text-slate-400" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{loading ? "—" : totalDocuments}</div>
+          </CardContent>
+        </Card>
+        <Card className="hover:shadow-md transition-shadow">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-slate-500">Pending Signatures</CardTitle>
+            <Clock className="h-4 w-4 text-slate-400" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{loading ? "—" : pendingDocuments}</div>
+          </CardContent>
+        </Card>
+        <Card className="hover:shadow-md transition-shadow">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-slate-500">Signed Documents</CardTitle>
+            <CheckCircle className="h-4 w-4 text-slate-400" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{loading ? "—" : completedDocuments}</div>
+          </CardContent>
+        </Card>
+        <Card className="hover:shadow-md transition-shadow">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-slate-500">Rejected Documents</CardTitle>
+            <Users className="h-4 w-4 text-slate-400" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{loading ? "—" : rejectedDocuments}</div>
+          </CardContent>
+        </Card>
       </div>
 
       <div className="grid gap-6 md:grid-cols-3">
@@ -123,9 +186,9 @@ function Dashboard() {
               </Link>
             </Button>
             <Button variant="outline" className="w-full justify-start h-12" asChild>
-              <Link to="/candidates">
+              <Link to="/recipients">
                 <Users className="mr-3 h-4 w-4 text-accent-600" />
-                Add Candidate
+                Add Recipient
               </Link>
             </Button>
             <Button variant="outline" className="w-full justify-start h-12" asChild>

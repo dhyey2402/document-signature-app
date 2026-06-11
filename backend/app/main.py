@@ -4,9 +4,15 @@ from app.routers.auth import router as auth_router
 
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.routers.documents import router as documents_router
+from app.routers.signatures import router as signatures_router
+
 app = FastAPI(
     title="Document Signature API"
 )
+
+app.include_router(documents_router)
+app.include_router(signatures_router)
 
 app.add_middleware(
     CORSMiddleware,

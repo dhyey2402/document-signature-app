@@ -13,8 +13,9 @@ const navItems = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { name: "Documents", href: "/documents", icon: FileText },
   { name: "Upload", href: "/upload", icon: Upload },
-  { name: "Candidates", href: "/candidates", icon: Users },
+  { name: "Recipients", href: "/recipients", icon: Users },
   { name: "Workflows", href: "/workflows", icon: CheckSquare },
+  { name: "Notifications", href: "/notifications", icon: FileText },
   { name: "Settings", href: "/settings", icon: Settings },
 ];
 
@@ -49,7 +50,7 @@ export function Sidebar({ className }) {
         <div className="flex items-center gap-3">
           <div className="h-10 w-10 rounded-full bg-slate-200 dark:bg-slate-800" />
           <div>
-            <p className="text-sm font-medium">Recruiter User</p>
+            <p className="text-sm font-medium">User</p>
             <p className="text-xs text-slate-500">Free Plan</p>
           </div>
         </div>

@@ -1,5 +1,6 @@
 from sqlalchemy import Column, Integer, String
 from app.models.base import Base
+from sqlalchemy.orm import relationship
 
 class User(Base):
     __tablename__ = "users"
@@ -15,3 +16,8 @@ class User(Base):
     )
 
     password = Column(String(255), nullable=False)
+
+    documents = relationship(
+        "Document",
+        back_populates="user"
+    )

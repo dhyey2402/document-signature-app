@@ -132,7 +132,7 @@ function Register() {
             <h1 className="text-3xl font-bold tracking-tight">SignFlow</h1>
           </div>
           <p className="text-slate-300 text-lg leading-relaxed mb-8">
-            "We reduced our candidate onboarding time by 40% after switching to SignFlow. The interface is clean, and the automated workflows are a game changer."
+            "We reduced our document turnaround time by 40% after switching to SignFlow. The interface is clean, and the automated workflows are a game changer."
           </p>
           <div className="flex items-center gap-4">
             <div className="h-10 w-10 rounded-full bg-slate-700 flex items-center justify-center overflow-hidden">
@@ -140,7 +140,7 @@ function Register() {
             </div>
             <div>
               <p className="font-medium text-sm">Sarah Jenkins</p>
-              <p className="text-xs text-slate-400">HR Director, TechCorp</p>
+              <p className="text-xs text-slate-400">Operations Director, TechCorp</p>
             </div>
           </div>
         </div>

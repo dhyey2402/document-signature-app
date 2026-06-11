@@ -41,7 +41,7 @@ export function Navbar({ className }) {
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-500" />
             <Input 
               type="search" 
-              placeholder="Search documents, candidates..." 
+              placeholder="Search documents..." 
               className="pl-9 bg-slate-100/50 dark:bg-slate-800/50 border-transparent focus-visible:border-ring focus-visible:ring-0" 
             />
           </div>
@@ -68,8 +68,8 @@ export function Navbar({ className }) {
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-56" align="end" forceMount>
               <DropdownMenuItem className="flex flex-col items-start gap-1 p-2">
-                <p className="text-sm font-medium leading-none">{user?.name || "Recruiter User"}</p>
-                <p className="text-xs leading-none text-slate-500">{user?.email || "recruiter@example.com"}</p>
+                <p className="text-sm font-medium leading-none">{user?.name || "User"}</p>
+                <p className="text-xs leading-none text-slate-500">{user?.email || "user@example.com"}</p>
               </DropdownMenuItem>
               <div className="h-px bg-border my-1" />
               <DropdownMenuItem className="cursor-pointer" onClick={() => navigate("/settings")}>

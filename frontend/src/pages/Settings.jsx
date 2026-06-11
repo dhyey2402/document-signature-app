@@ -78,7 +78,7 @@ export default function Settings() {
                   <div className="grid md:grid-cols-2 gap-5">
                     <div className="space-y-2">
                       <label className="text-sm font-medium text-slate-700 dark:text-slate-300">First Name</label>
-                      <Input defaultValue="Recruiter" />
+                      <Input defaultValue="User" />
                     </div>
                     <div className="space-y-2">
                       <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Last Name</label>
@@ -88,12 +88,12 @@ export default function Settings() {
                   
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Email Address</label>
-                    <Input defaultValue="recruiter@example.com" type="email" />
+                    <Input defaultValue="user@example.com" type="email" />
                   </div>
 
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Job Title</label>
-                    <Input defaultValue="Senior Technical Recruiter" />
+                    <Input defaultValue="Administrator" />
                   </div>
                 </CardContent>
                 <CardFooter className="border-t border-border bg-slate-50/50 dark:bg-slate-900/50 px-6 py-4">

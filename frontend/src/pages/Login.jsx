@@ -6,13 +6,14 @@ import { toast } from "react-hot-toast";
 import { AuthContext } from "../context/AuthContext";
 import { Input } from "../components/ui/Input";
 import { Button } from "../components/ui/Button";
+import api from "../services/api";
 
 function Login() {
   const { login } = useContext(AuthContext);
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
-    username: "",
+    email: "",
     password: "",
   });
   const [error, setError] = useState("");
@@ -25,11 +26,35 @@ function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
+
     try {
-      await login(formData.username, formData.password);
+      const response = await api.post("/auth/login", {
+        email: formData.email,
+        password: formData.password,
+      });
+
+      login(response.data.access_token);
+
       navigate("/dashboard");
     } catch (err) {
-      toast.error(err.response?.data?.detail || "Something went wrong. Please try again.");
+      const data = err?.response?.data;
+      // FastAPI 422 commonly returns: { detail: [ { loc, msg, ... }, ... ] }
+      const detail = data?.detail;
+
+      let message = "Something went wrong. Please try again.";
+      if (typeof detail === "string") {
+        message = detail;
+      } else if (Array.isArray(detail)) {
+        message = detail
+          .map((d) => d?.msg)
+          .filter(Boolean)
+          .join("; ");
+      } else if (data?.detail) {
+        message = String(data.detail);
+      }
+
+      toast.error(message);
+
     } finally {
       setIsLoading(false);
     }
@@ -54,7 +79,7 @@ function Login() {
           <PenTool className="h-12 w-12 mb-6 text-accent-400" />
           <h1 className="text-4xl font-bold mb-4 leading-tight">Secure Document Signing Platform</h1>
           <p className="text-primary-100 text-lg">
-            Streamline your recruitment process with legally binding e-signatures. Fast, secure, and fully compliant.
+            Send, track, and manage digital signatures securely.
           </p>
         </div>
       </div>
@@ -78,10 +103,10 @@ function Login() {
                 <Mail className="absolute left-3 top-2.5 h-5 w-5 text-slate-400" />
                 <Input
                   type="text"
-                  name="username"
+                  name="email"
                   placeholder="Enter your username"
                   className="pl-10"
-                  value={formData.username}
+                  value={formData.email}
                   onChange={handleChange}
                   required
                 />
