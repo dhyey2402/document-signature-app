@@ -8,12 +8,22 @@ from app.core.security import get_current_user
 from app.models.user import User
 from app.models.document import Document
 from app.models.signature import Signature
+from app.models.signature_asset import SignatureAsset
 from app.schemas.signature import SignatureCreate, SignatureResponse
+from app.schemas.signature_asset import SignatureAssetUploadResponse
+
+import os
+import uuid
+from fastapi import UploadFile, File
+import fitz  # PyMuPDF
+from app.core.config import SIGNATURES_DIR
 
 router = APIRouter(
     prefix="/api/signatures",
     tags=["Signatures"]
 )
+
+
 
 @router.post("/", response_model=SignatureResponse)
 def create_signature(
@@ -30,8 +40,28 @@ def create_signature(
         .first()
     )
 
+
     if not document:
         raise HTTPException(status_code=404, detail="Document not found")
+
+    if not document.file_path or not os.path.exists(document.file_path):
+        raise HTTPException(status_code=400, detail="Original PDF file is missing on server")
+
+    doc = None
+    try:
+        doc = fitz.open(document.file_path)
+        total_pages = len(doc)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to open/parse PDF document: {e}")
+    finally:
+        if doc is not None:
+            doc.close()
+
+    if signature_data.page_number < 1 or signature_data.page_number > total_pages:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid page_number: Document has only {total_pages} page(s)."
+        )
 
     new_signature = Signature(
         document_id=signature_data.document_id,
@@ -74,3 +104,39 @@ def get_signatures_for_document(
     )
 
     return signatures
+
+
+@router.post("/upload", response_model=SignatureAssetUploadResponse)
+def upload_signature_asset(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    allowed = {"image/png", "image/jpeg", "image/jpg", "image/webp"}
+    content_type = file.content_type
+    if content_type and content_type not in allowed:
+        raise HTTPException(status_code=400, detail="Unsupported signature image type")
+
+    ext = os.path.splitext(file.filename or "")[1].lower()
+    if ext not in {".png", ".jpg", ".jpeg", ".webp"}:
+        ext = ".png"
+
+    asset_id = str(uuid.uuid4())
+    saved_name = f"signature_{asset_id}{ext}"
+    saved_path = os.path.join(SIGNATURES_DIR, saved_name)
+
+    with open(saved_path, "wb") as buffer:
+        buffer.write(file.file.read())
+
+    asset = SignatureAsset(
+        uploaded_by=current_user.id,
+        file_path=saved_path,
+        file_name=file.filename,
+        content_type=content_type,
+    )
+    db.add(asset)
+    db.commit()
+    db.refresh(asset)
+
+    return asset
+

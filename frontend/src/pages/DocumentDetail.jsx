@@ -1,14 +1,19 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
 
 import { getDocumentDetail, downloadDocument, getSignatures, saveSignature } from "../services/documentService";
+import { uploadSignatureAsset, signDocument, downloadSignedDocument, generateSigningLink } from "../services/signatureService";
+
+import SignatureUploadOrDraw from "../components/signature/SignatureUploadOrDraw";
+
 
 import { DashboardLayout } from "../components/layout/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../components/ui/Card";
+import { Input } from "../components/ui/Input";
 import { Button } from "../components/ui/Button";
 import { Badge } from "../components/ui/Badge";
 
@@ -25,7 +30,6 @@ const statusToBadgeVariant = (status) => {
 
 function DocumentDetail() {
   const { id } = useParams();
-  const navigate = useNavigate();
 
   const [document, setDocument] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -39,6 +43,16 @@ function DocumentDetail() {
   const [savedSignatures, setSavedSignatures] = useState([]);
   const [pendingSignature, setPendingSignature] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
+
+  const [signatureAssetId, setSignatureAssetId] = useState(null);
+  const [isSigning, setIsSigning] = useState(false);
+
+  // Day 7 states
+  const [recipientName, setRecipientName] = useState("");
+  const [recipientEmail, setRecipientEmail] = useState("");
+  const [isGeneratingLink, setIsGeneratingLink] = useState(false);
+  const [generatedLink, setGeneratedLink] = useState("");
+
   
   // Drag states
   const [isDragging, setIsDragging] = useState(false);
@@ -59,6 +73,7 @@ function DocumentDetail() {
       setPdfPreviewUrl(url);
 
     } catch (e) {
+      console.error(e);
       setError("Document not found.");
       toast.error("Failed to load document data.");
     } finally {
@@ -67,6 +82,7 @@ function DocumentDetail() {
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchData();
     
     return () => {
@@ -92,6 +108,7 @@ function DocumentDetail() {
       window.URL.revokeObjectURL(url);
       toast.success("Download started.");
     } catch (e) {
+      console.error(e);
       toast.error("Failed to download document.");
     }
   };
@@ -106,6 +123,7 @@ function DocumentDetail() {
 
   const handleSaveSignature = async () => {
     if (!pendingSignature || !document) return;
+
     setIsSaving(true);
     try {
       const payload = {
@@ -121,6 +139,7 @@ function DocumentDetail() {
       setPendingSignature(null);
       toast.success("Signature position saved successfully!");
     } catch (e) {
+      console.error(e);
       toast.error("Failed to save signature.");
     } finally {
       setIsSaving(false);
@@ -189,6 +208,35 @@ function DocumentDetail() {
        x: newPixelX / rect.width,
        y: newPixelY / rect.height
     });
+  };
+
+  const handleGenerateSigningLink = async () => {
+    if (!document) return;
+    setIsGeneratingLink(true);
+    setGeneratedLink("");
+    try {
+      const res = await generateSigningLink({
+        document_id: document.id,
+        recipient_name: recipientName,
+        recipient_email: recipientEmail
+      });
+      setGeneratedLink(res.data.public_url);
+      if (res.data.email_sent) {
+        toast.success("Signing link generated! Notification email sent.");
+      } else {
+        toast.success("Signing link generated! (Email failed to send)");
+      }
+    } catch (e) {
+      toast.error(e?.response?.data?.detail || "Failed to generate signing link.");
+    } finally {
+      setIsGeneratingLink(false);
+    }
+  };
+
+  const handleCopyLink = () => {
+    if (!generatedLink) return;
+    navigator.clipboard.writeText(generatedLink);
+    toast.success("Link copied to clipboard!");
   };
 
   const handleMouseUp = () => {
@@ -306,7 +354,7 @@ function DocumentDetail() {
             </Card>
           </div>
 
-          <div className="w-full lg:w-80 space-y-6">
+          <div className="w-full lg:w-80 space-y-6 lg:sticky lg:top-6 lg:self-start lg:max-h-[calc(100vh-48px)] lg:overflow-y-auto pr-1">
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg">Metadata</CardTitle>
@@ -332,6 +380,15 @@ function DocumentDetail() {
                     {document.created_at ? new Date(document.created_at).toLocaleString() : "—"}
                   </div>
                 </div>
+
+                {document.signed_at && (
+                  <div className="space-y-1 animate-in fade-in slide-in-from-top-1 duration-200">
+                    <div className="text-xs font-medium text-slate-500 uppercase tracking-wider">Signed Date</div>
+                    <div className="font-semibold text-sm text-emerald-600 dark:text-emerald-400">
+                      {new Date(document.signed_at).toLocaleString()}
+                    </div>
+                  </div>
+                )}
                 
                 <div className="space-y-1">
                   <div className="text-xs font-medium text-slate-500 uppercase tracking-wider">Pages</div>
@@ -344,11 +401,63 @@ function DocumentDetail() {
 
             <Card>
               <CardHeader>
+                <CardTitle className="text-lg">Send for Signature</CardTitle>
+                <CardDescription>Email a public signing link to a recipient.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Recipient Name</label>
+                  <Input 
+                    type="text" 
+                    placeholder="John Doe" 
+                    value={recipientName}
+                    onChange={(e) => setRecipientName(e.target.value)}
+                    disabled={isGeneratingLink}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Recipient Email</label>
+                  <Input 
+                    type="email" 
+                    placeholder="john@example.com" 
+                    value={recipientEmail}
+                    onChange={(e) => setRecipientEmail(e.target.value)}
+                    disabled={isGeneratingLink}
+                  />
+                </div>
+                <Button 
+                  onClick={handleGenerateSigningLink} 
+                  className="w-full"
+                  disabled={isGeneratingLink || !recipientName || !recipientEmail}
+                >
+                  {isGeneratingLink ? "Generating..." : "Send Signature Link"}
+                </Button>
+
+                {generatedLink && (
+                  <div className="pt-4 space-y-2 border-t border-slate-200 dark:border-slate-800 animate-in fade-in duration-200">
+                    <div className="text-xs font-medium text-slate-500 uppercase tracking-wider">Public Link</div>
+                    <div className="flex gap-2">
+                      <Input 
+                        type="text" 
+                        readOnly 
+                        value={generatedLink}
+                        className="text-xs flex-1"
+                      />
+                      <Button variant="outline" size="sm" onClick={handleCopyLink}>
+                        Copy
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
                 <CardTitle className="text-lg">Signature Actions</CardTitle>
                 <CardDescription>Drag the box below onto the PDF to place a signature.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                
                 {/* Draggable Source */}
                 {!pendingSignature && (
                   <div 
@@ -359,7 +468,7 @@ function DocumentDetail() {
                     Drag Me to Document
                   </div>
                 )}
-                
+
                 {pendingSignature && (
                   <div className="pt-2 flex flex-col gap-3">
                     <div className="text-sm font-medium text-center text-slate-700 dark:text-slate-300">
@@ -384,14 +493,88 @@ function DocumentDetail() {
                     </div>
                   </div>
                 )}
-                
+
                 {savedSignatures.length > 0 && !pendingSignature && (
                   <div className="pt-2 text-sm text-center text-slate-500">
                     {savedSignatures.length} signature{savedSignatures.length !== 1 && 's'} saved.
                   </div>
                 )}
+
+                <div className="pt-4 border-t border-slate-200 dark:border-slate-800" />
+
+                <div className="space-y-3">
+                  <div className="text-sm font-medium text-slate-700 dark:text-slate-200">Signature image</div>
+                  <SignatureUploadOrDraw
+                    disabled={isSigning}
+                    onAssetUploaded={async (formData) => {
+                      const res = await uploadSignatureAsset(formData);
+                      setSignatureAssetId(res.data.id);
+                      toast.success("Signature image uploaded.");
+                    }}
+                  />
+
+                  {signatureAssetId && (
+                    <div className="text-xs text-slate-500">Asset ID: {signatureAssetId}</div>
+                  )}
+
+                  <div className="pt-2 flex gap-2">
+                    <Button
+                      onClick={async () => {
+                        if (!document) return;
+                        setIsSigning(true);
+                        try {
+                          if (!signatureAssetId) {
+                            toast.error("Upload a signature image first.");
+                            return;
+                          }
+                          await signDocument(document.id, { signature_asset_id: signatureAssetId });
+                          toast.success("Document signed successfully.");
+                          setDocument({ ...document, status: "signed", signed_at: new Date().toISOString() });
+                        } catch (e) {
+                          toast.error(e?.response?.data?.detail || "Failed to sign document.");
+                        } finally {
+                          setIsSigning(false);
+                        }
+                      }}
+                      className="flex-1"
+                      disabled={isSigning || savedSignatures.length === 0}
+                    >
+                      {isSigning ? "Signing..." : "Sign Document"}
+                    </Button>
+                  </div>
+
+                  {document?.status === "signed" && (
+                    <div className="pt-2">
+                      <Button
+                        variant="outline"
+                        className="w-full"
+                        disabled={!document}
+                        onClick={async () => {
+                          try {
+                            const res = await downloadSignedDocument(document.id);
+                            const blob = res.data;
+                            const url = window.URL.createObjectURL(blob);
+                            const a = window.document.createElement("a");
+                            a.href = url;
+                            a.download = `signed_${document.file_name || "document.pdf"}`;
+                            window.document.body.appendChild(a);
+                            a.click();
+                            a.remove();
+                            window.URL.revokeObjectURL(url);
+                            toast.success("Signed PDF download started.");
+                          } catch (e) {
+                            toast.error(e?.response?.data?.detail || "Failed to download signed PDF.");
+                          }
+                        }}
+                      >
+                        Download Signed PDF
+                      </Button>
+                    </div>
+                  )}
+                </div>
               </CardContent>
             </Card>
+
           </div>
         </div>
       )}

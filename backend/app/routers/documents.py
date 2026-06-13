@@ -17,16 +17,11 @@ from app.core.security import get_current_user
 from app.models.user import User
 from app.models.document import Document
 
+from app.core.config import DOCUMENTS_DIR
+
 router = APIRouter(
     prefix="/api/documents",
     tags=["Documents"]
-)
-
-UPLOAD_DIR = "uploads"
-
-os.makedirs(
-    UPLOAD_DIR,
-    exist_ok=True
 )
 
 
@@ -44,7 +39,7 @@ def upload_document(
         )
 
     file_path = os.path.join(
-        UPLOAD_DIR,
+        DOCUMENTS_DIR,
         file.filename
     )
 

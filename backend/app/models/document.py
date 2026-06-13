@@ -21,6 +21,17 @@ class Document(Base):
         default="draft"
     )
 
+    signed_file_path = Column(
+        String(500),
+        nullable=True
+    )
+
+    signed_at = Column(
+        DateTime(timezone=True),
+        nullable=True
+    )
+
+
     uploaded_by = Column(
         Integer,
         ForeignKey("users.id")

@@ -16,6 +16,7 @@ import Settings from "./pages/Settings";
 import Notifications from "./pages/Notifications";
 import ProtectedRoute from "./components/ProtectedRoute";
 import DocumentDetail from "./pages/DocumentDetail";
+import PublicSign from "./pages/PublicSign";
 
 
 function App() {
@@ -26,6 +27,7 @@ function App() {
         <Route path="/" element={<Navigate to="/login" />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/sign/:token" element={<PublicSign />} />
 
         {/* Authenticated Routes */}
         <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />

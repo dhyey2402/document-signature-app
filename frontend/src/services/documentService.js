@@ -38,3 +38,4 @@ export const saveSignature = async (data) => {
 export const getSignatures = async (documentId) => {
   return await api.get(`/signatures/${documentId}`);
 };
+
