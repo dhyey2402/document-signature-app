@@ -2,7 +2,7 @@
 
 SignFlow is a modern, full-stack Document Signature Platform designed to simplify the process of requesting, tracking, and applying digital signatures to PDF documents. Built with a sleek user interface and a robust API backend, it offers an end-to-end workflow for managing document lifecycles securely.
 
-![SignFlow Dashboard Preview](./frontend/public/icon.png) <!-- Update with an actual screenshot path if available -->
+![SignFlow Dashboard Preview](./frontend/public/icon.png) 
 
 ## 🚀 Features
 
