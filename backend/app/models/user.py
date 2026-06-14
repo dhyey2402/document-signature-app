@@ -21,3 +21,8 @@ class User(Base):
         "Document",
         back_populates="user"
     )
+
+    audit_logs = relationship(
+        "AuditLog",
+        back_populates="user"
+    )

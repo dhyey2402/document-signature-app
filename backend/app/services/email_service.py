@@ -101,6 +101,6 @@ def send_signing_email(
         server.quit()
         return True
     except Exception as e:
-        # Log to stderr/stdout so it is visible in console
+        # log connection errors
         print(f"Error sending email to {recipient_email}: {e}")
         return False

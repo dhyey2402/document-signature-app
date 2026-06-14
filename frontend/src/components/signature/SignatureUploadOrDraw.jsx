@@ -44,10 +44,9 @@ function SignatureUploadOrDraw({ onAssetUploaded, disabled }) {
 
     setUploading(true);
     try {
-      // caller handles API call
+      // delegate asset creation to parent
       await onAssetUploaded(formData);
     } catch (e) {
-      // onAssetUploaded should toast; but just in case
       toast.error("Failed to upload signature image.");
     } finally {
       setUploading(false);

@@ -15,6 +15,7 @@ function SignatureCanvas({ onChange }) {
     const parent = canvas.parentElement;
     if (!parent) return;
 
+    // prevent pixelation on high-dpi displays
     const ratio = window.devicePixelRatio || 1;
     const rect = parent.getBoundingClientRect();
 
@@ -29,7 +30,7 @@ function SignatureCanvas({ onChange }) {
     const ctx = canvas.getContext("2d");
     ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
 
-    // white background so PNG is consistent
+    // solid white background prevents transparent PNG artifacts
     ctx.fillStyle = "white";
     ctx.fillRect(0, 0, width, height);
     ctx.lineWidth = 3;
@@ -39,6 +40,7 @@ function SignatureCanvas({ onChange }) {
   };
 
   const getPoint = (e) => {
+    // offset coordinate calculations relative to canvas element
     const canvas = canvasRef.current;
     if (!canvas) return { x: 0, y: 0 };
     const rect = canvas.getBoundingClientRect();
@@ -70,7 +72,7 @@ function SignatureCanvas({ onChange }) {
     ctx.stroke();
 
     lastPointRef.current = { x, y };
-    // notify continuously
+    // notify parent of updates
     triggerChange();
   };
 
@@ -80,6 +82,7 @@ function SignatureCanvas({ onChange }) {
   };
 
   const triggerChange = () => {
+    // dispatch signature blob to parent handler
     if (!onChange || !canvasRef.current) return;
     if (!hasSignatureRef.current) return;
 

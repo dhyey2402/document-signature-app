@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 
 import {
   deleteDocument,
@@ -37,18 +37,24 @@ const statusToFilterLabel = (status) => {
 
   if (normalized === "signed") return "Signed";
   if (normalized === "rejected") return "Rejected";
-  if (normalized === "viewed") return "Viewed";
 
+  // 'pending' and legacy 'draft' both map to Pending
   return "Pending";
 };
 
 function Documents() {
+  const [searchParams] = useSearchParams();
   const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(searchParams.get("q") || "");
   const [statusFilter, setStatusFilter] = useState("All");
+
+  useEffect(() => {
+    const q = searchParams.get("q");
+    if (q !== null) setQuery(q);
+  }, [searchParams]);
 
   const fetchDocuments = async () => {
     setLoading(true);
@@ -164,7 +170,6 @@ function Documents() {
               {[
                 "All",
                 "Pending",
-                "Viewed",
                 "Signed",
                 "Rejected",
               ].map((label) => (

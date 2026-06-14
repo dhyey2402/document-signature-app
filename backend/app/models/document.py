@@ -18,7 +18,7 @@ class Document(Base):
 
     status = Column(
         String(50),
-        default="draft"
+        default="pending"
     )
 
     signed_file_path = Column(
@@ -31,6 +31,15 @@ class Document(Base):
         nullable=True
     )
 
+    rejection_reason = Column(
+        String(1000),
+        nullable=True
+    )
+
+    rejected_at = Column(
+        DateTime(timezone=True),
+        nullable=True
+    )
 
     uploaded_by = Column(
         Integer,
@@ -45,4 +54,11 @@ class Document(Base):
     user = relationship(
         "User",
         back_populates="documents"
+    )
+
+    audit_logs = relationship(
+        "AuditLog",
+        back_populates="document",
+        cascade="all, delete-orphan",
+        order_by="AuditLog.created_at.desc()"
     )

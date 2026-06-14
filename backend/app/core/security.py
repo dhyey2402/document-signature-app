@@ -22,6 +22,7 @@ def get_current_user(
             detail="Your session has expired or is invalid. Please log in again."
         )
 
+    # resolve user from subject id
     user_id = payload.get("sub")
     user = (
         db.query(User)

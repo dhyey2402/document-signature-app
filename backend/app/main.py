@@ -19,22 +19,32 @@ import app.models.document
 import app.models.signature
 import app.models.signature_asset
 import app.models.signing_link
+import app.models.audit_log
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # 1) Create tables if not exists
+    # initialize schema structure (creates new tables like audit_logs automatically)
     Base.metadata.create_all(bind=engine)
-    # 2) Perform safe migration if signed_file_path or signed_at is missing
+
+    # run lightweight sqlite schema migration for existing tables
     inspector = inspect(engine)
+
     if "documents" in inspector.get_table_names():
         columns = [col["name"] for col in inspector.get_columns("documents")]
         with engine.begin() as conn:
             if "signed_file_path" not in columns:
                 conn.execute(text("ALTER TABLE documents ADD COLUMN signed_file_path VARCHAR(500) NULL"))
-                print("Database Migration: Successfully added column signed_file_path to documents table.")
+                print("Migration: added signed_file_path to documents.")
             if "signed_at" not in columns:
                 conn.execute(text("ALTER TABLE documents ADD COLUMN signed_at TIMESTAMP WITH TIME ZONE NULL"))
-                print("Database Migration: Successfully added column signed_at to documents table.")
+                print("Migration: added signed_at to documents.")
+            if "rejection_reason" not in columns:
+                conn.execute(text("ALTER TABLE documents ADD COLUMN rejection_reason VARCHAR(1000) NULL"))
+                print("Migration: added rejection_reason to documents.")
+            if "rejected_at" not in columns:
+                conn.execute(text("ALTER TABLE documents ADD COLUMN rejected_at TIMESTAMP WITH TIME ZONE NULL"))
+                print("Migration: added rejected_at to documents.")
+
     yield
 
 app = FastAPI(

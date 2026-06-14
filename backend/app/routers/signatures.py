@@ -1,6 +1,6 @@
 from typing import List
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 
 from app.core.dependencies import get_db
@@ -11,6 +11,7 @@ from app.models.signature import Signature
 from app.models.signature_asset import SignatureAsset
 from app.schemas.signature import SignatureCreate, SignatureResponse
 from app.schemas.signature_asset import SignatureAssetUploadResponse
+from app.services.audit_service import log_event, SIGNATURE_PLACED
 
 import os
 import uuid
@@ -24,10 +25,10 @@ router = APIRouter(
 )
 
 
-
 @router.post("/", response_model=SignatureResponse)
 def create_signature(
     signature_data: SignatureCreate,
+    request: Request,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
@@ -39,7 +40,6 @@ def create_signature(
         )
         .first()
     )
-
 
     if not document:
         raise HTTPException(status_code=404, detail="Document not found")
@@ -57,6 +57,7 @@ def create_signature(
         if doc is not None:
             doc.close()
 
+    # verify requested page index is within pdf bounds
     if signature_data.page_number < 1 or signature_data.page_number > total_pages:
         raise HTTPException(
             status_code=400,
@@ -73,6 +74,18 @@ def create_signature(
     )
 
     db.add(new_signature)
+    db.flush()
+
+    client_ip = request.client.host if request.client else None
+    log_event(
+        db,
+        document_id=signature_data.document_id,
+        action=SIGNATURE_PLACED,
+        description=f"Signature placeholder placed on page {signature_data.page_number} by {current_user.name}.",
+        ip_address=client_ip,
+        user_id=current_user.id,
+    )
+
     db.commit()
     db.refresh(new_signature)
 
@@ -112,6 +125,7 @@ def upload_signature_asset(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    # validate file mime type
     allowed = {"image/png", "image/jpeg", "image/jpg", "image/webp"}
     content_type = file.content_type
     if content_type and content_type not in allowed:
@@ -125,6 +139,7 @@ def upload_signature_asset(
     saved_name = f"signature_{asset_id}{ext}"
     saved_path = os.path.join(SIGNATURES_DIR, saved_name)
 
+    # persist signature image asset
     with open(saved_path, "wb") as buffer:
         buffer.write(file.file.read())
 
@@ -139,4 +154,3 @@ def upload_signature_asset(
     db.refresh(asset)
 
     return asset
-

@@ -20,7 +20,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../co
 import { Button } from "../components/ui/Button";
 import { Badge } from "../components/ui/Badge";
 
-// Set up the react-pdf worker
+// register pdf.js worker
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
 
@@ -32,21 +32,16 @@ function PublicSign() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // PDF page count
   const [numPages, setNumPages] = useState(null);
-
-  // Signature state
   const [signatureFormData, setSignatureFormData] = useState(null);
   const [isSigning, setIsSigning] = useState(false);
-
-  // Signed details
   const [signedInfo, setSignedInfo] = useState(null);
 
   const fetchData = async () => {
     setLoading(true);
     setError(null);
     try {
-      // 1. Fetch public link details (unauthenticated)
+      // fetch details and pdf binary
       const detailRes = await api.get(`/signing-links/${token}`);
       setLinkDetail(detailRes.data);
 
@@ -57,9 +52,9 @@ function PublicSign() {
         });
       }
 
-      // 2. Fetch original PDF blob (unauthenticated)
       if (detailRes.data.status !== "signed") {
         const blobRes = await api.get(`/signing-links/${token}/download`, {
+          params: { preview: true },
           responseType: "blob",
         });
         const url = window.URL.createObjectURL(blobRes.data);
@@ -78,6 +73,7 @@ function PublicSign() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchData();
 
+    // clean up object URL on unmount
     return () => {
       if (pdfPreviewUrl) {
         window.URL.revokeObjectURL(pdfPreviewUrl);
@@ -109,7 +105,7 @@ function PublicSign() {
       });
       toast.success("Document signed successfully!");
       setSignedInfo(res.data);
-      // Update local link details
+      // update link state after sign
       setLinkDetail({
         ...linkDetail,
         status: "signed"
@@ -266,7 +262,7 @@ function PublicSign() {
                                   width={700}
                                 />
                                 
-                                {/* Overlay placeholders for this page */}
+                                {/* position overlays using relative coordinate metrics */}
                                 {linkDetail.signatures.filter(sig => sig.page_number === pageNumber).map(sig => (
                                   <div 
                                     key={sig.id}

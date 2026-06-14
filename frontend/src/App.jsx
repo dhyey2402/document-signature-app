@@ -17,6 +17,7 @@ import Notifications from "./pages/Notifications";
 import ProtectedRoute from "./components/ProtectedRoute";
 import DocumentDetail from "./pages/DocumentDetail";
 import PublicSign from "./pages/PublicSign";
+import HelpGuide from "./pages/HelpGuide";
 
 
 function App() {
@@ -42,10 +43,12 @@ function App() {
           }
         />
 
+
         <Route path="/recipients" element={<ProtectedRoute><Recipients /></ProtectedRoute>} />
         <Route path="/workflows" element={<ProtectedRoute><Workflows /></ProtectedRoute>} />
         <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
         <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+        <Route path="/guide" element={<ProtectedRoute><HelpGuide /></ProtectedRoute>} />
       </Routes>
     </BrowserRouter>
   );

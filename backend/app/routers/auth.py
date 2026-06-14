@@ -16,6 +16,7 @@ router = APIRouter(
 
 @router.post("/register")
 def register(user: UserCreate, db: Session = Depends(get_db)):
+    # guard against duplicate registrations
     existing_user = get_user_by_email(db, user.email)
 
     if existing_user:
@@ -32,6 +33,7 @@ def register(user: UserCreate, db: Session = Depends(get_db)):
 
 @router.post("/login")
 def login(user: UserLogin, db: Session = Depends(get_db)):
+    # verify credentials and return jwt token
     authenticated_user = authenticate_user(db, user.email, user.password)
 
     if not authenticated_user:

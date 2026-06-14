@@ -12,6 +12,7 @@ ALGORITHM = os.getenv("ALGORITHM")
 def create_access_token(data: dict):
     payload = data.copy()
 
+    # set standard 30 min expiration
     expire = datetime.utcnow() + timedelta(minutes=30)
 
     payload.update({"exp": expire})
@@ -25,6 +26,7 @@ def create_access_token(data: dict):
 
 def verify_access_token(token: str):
     try:
+        # validate token and retrieve payload
         payload = jwt.decode(
             token,
             SECRET_KEY,

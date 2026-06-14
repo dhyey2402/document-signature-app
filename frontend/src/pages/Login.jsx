@@ -16,7 +16,6 @@ function Login() {
     email: "",
     password: "",
   });
-  const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
   const handleChange = (e) => {
@@ -38,7 +37,7 @@ function Login() {
       navigate("/dashboard");
     } catch (err) {
       const data = err?.response?.data;
-      // FastAPI 422 commonly returns: { detail: [ { loc, msg, ... }, ... ] }
+      // handle validation error details
       const detail = data?.detail;
 
       let message = "Something went wrong. Please try again.";
@@ -140,20 +139,6 @@ function Login() {
             <Button type="submit" className="w-full h-11" disabled={isLoading}>
               {isLoading ? "Signing in..." : "Sign in"}
             </Button>
-            
-            <div className="relative my-6">
-              <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-border"></div></div>
-              <div className="relative flex justify-center text-sm"><span className="bg-slate-50 dark:bg-slate-950 px-2 text-slate-500">Or continue with</span></div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <Button variant="outline" type="button" className="h-11">
-                Github
-              </Button>
-              <Button variant="outline" type="button" className="h-11">
-                Google
-              </Button>
-            </div>
           </form>
 
           <p className="mt-8 text-center text-sm text-slate-500">

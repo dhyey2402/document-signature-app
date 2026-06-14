@@ -34,6 +34,7 @@ def generate_signed_pdf(original_file_path: str, signature_asset_path: str, sign
             w = float(sig.width)
             h = float(sig.height)
 
+            # convert relative coordinates to absolute pdf points
             x0 = page_rect.x0 + x * page_w
             y0 = page_rect.y0 + y * page_h
             x1 = x0 + w * page_w
@@ -41,7 +42,7 @@ def generate_signed_pdf(original_file_path: str, signature_asset_path: str, sign
 
             rect = fitz.Rect(x0, y0, x1, y1)
 
-            # Insert image covering rect
+            # insert signature image into rect
             page.insert_image(rect, filename=signature_asset_path, keep_proportion=False)
 
         signed_asset_id = str(uuid.uuid4())

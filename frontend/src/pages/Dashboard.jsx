@@ -73,6 +73,36 @@ function Dashboard() {
   }));
 
 
+  const handleDownloadReport = () => {
+    if (documents.length === 0) {
+      toast.error("No documents to report.");
+      return;
+    }
+    
+    // Create CSV content
+    const headers = ["ID", "Title", "File Name", "Status", "Uploaded At"];
+    const rows = documents.map(doc => [
+      doc.id,
+      `"${doc.title || ''}"`,
+      `"${doc.file_name || ''}"`,
+      doc.status || "draft",
+      new Date(doc.created_at).toISOString()
+    ]);
+    
+    const csvContent = [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
+    
+    // Trigger download
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `document_report_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success("Report downloaded");
+  };
+
   return (
     <DashboardLayout>
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
@@ -81,7 +111,7 @@ function Dashboard() {
           <p className="text-slate-500 mt-1">Welcome back. Here's your document pipeline today.</p>
         </div>
         <div className="flex items-center gap-3">
-          <Button variant="outline" className="hidden sm:flex">
+          <Button variant="outline" className="hidden sm:flex" onClick={handleDownloadReport}>
             Download Report
           </Button>
           <Button asChild>
@@ -198,11 +228,13 @@ function Dashboard() {
               </Link>
             </Button>
             
-            <div className="mt-8 p-4 rounded-xl bg-primary-50 dark:bg-primary-900/10 border border-primary-100 dark:border-primary-900/20">
-              <h4 className="font-semibold text-sm text-primary-900 dark:text-primary-100 mb-2">Need help?</h4>
-              <p className="text-xs text-primary-700 dark:text-primary-300 mb-3">Check out our guide on creating binding digital signatures.</p>
-              <Button variant="link" className="p-0 h-auto text-xs text-primary-600 font-semibold">
-                Read the guide <ArrowRight className="ml-1 h-3 w-3" />
+            <div className="mt-8 p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50">
+              <h4 className="font-semibold text-sm text-slate-900 dark:text-slate-100 mb-2">Need help?</h4>
+              <p className="text-xs text-slate-600 dark:text-slate-400 mb-3">Check out our guide on creating binding digital signatures.</p>
+              <Button variant="link" className="p-0 h-auto text-xs text-primary-600 dark:text-primary-400 font-semibold hover:text-primary-700 dark:hover:text-primary-300" asChild>
+                <Link to="/guide">
+                  Read the guide <ArrowRight className="ml-1 h-3 w-3" />
+                </Link>
               </Button>
             </div>
           </CardContent>
