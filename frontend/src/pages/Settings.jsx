@@ -4,9 +4,16 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Button } from "../components/ui/Button";
 import { Input } from "../components/ui/Input";
 import { Avatar, AvatarFallback } from "../components/ui/Avatar";
-import { User, Bell, Shield, Check } from "lucide-react";
+import { User, Bell, Shield, Check, Info } from "lucide-react";
 import { AuthContext } from "../context/AuthContext";
 import toast from "react-hot-toast";
+
+// Default notification preferences
+const DEFAULT_NOTIF_PREFS = {
+  documentSigned: true,
+  documentViewed: false,
+  documentRejected: true,
+};
 
 export default function Settings() {
   const { user } = useContext(AuthContext);
@@ -14,13 +21,9 @@ export default function Settings() {
 
   // Derive first/last name from the single `name` field
   const nameParts = (user?.name || "").trim().split(/\s+/);
-  const derivedFirst = nameParts[0] || "";
-  const derivedLast = nameParts.slice(1).join(" ") || "";
+  const [firstName, setFirstName] = useState(nameParts[0] || "");
+  const [lastName, setLastName] = useState(nameParts.slice(1).join(" ") || "");
 
-  const [firstName, setFirstName] = useState(derivedFirst);
-  const [lastName, setLastName] = useState(derivedLast);
-
-  // Sync if user loads after mount
   useEffect(() => {
     if (user?.name) {
       const parts = user.name.trim().split(/\s+/);
@@ -29,9 +32,28 @@ export default function Settings() {
     }
   }, [user]);
 
+  // Password fields
   const [currentPw, setCurrentPw] = useState("");
   const [newPw, setNewPw] = useState("");
   const [confirmPw, setConfirmPw] = useState("");
+
+  // Notification preferences with real local state
+  const [notifPrefs, setNotifPrefs] = useState(() => {
+    try {
+      const saved = localStorage.getItem("notif_prefs");
+      return saved ? { ...DEFAULT_NOTIF_PREFS, ...JSON.parse(saved) } : DEFAULT_NOTIF_PREFS;
+    } catch {
+      return DEFAULT_NOTIF_PREFS;
+    }
+  });
+
+  const togglePref = (key) => {
+    setNotifPrefs((prev) => {
+      const next = { ...prev, [key]: !prev[key] };
+      try { localStorage.setItem("notif_prefs", JSON.stringify(next)); } catch {}
+      return next;
+    });
+  };
 
   const initials = user?.name
     ? user.name.split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 2)
@@ -44,7 +66,8 @@ export default function Settings() {
   ];
 
   const handleSaveProfile = () => {
-    toast.success("Profile display updated.");
+    // Name changes are display-only — no backend endpoint exists yet
+    toast.success("Display name updated locally.");
   };
 
   const handleUpdatePassword = () => {
@@ -60,7 +83,8 @@ export default function Settings() {
       toast.error("New password must be at least 6 characters.");
       return;
     }
-    toast.success("Password updated. (UI only — backend endpoint not yet wired.)");
+    // Placeholder — no backend change-password endpoint yet
+    toast("Password change requires re-authentication. Feature coming soon.", { icon: "🔒" });
     setCurrentPw("");
     setNewPw("");
     setConfirmPw("");
@@ -74,7 +98,7 @@ export default function Settings() {
       </div>
 
       <div className="flex flex-col md:flex-row gap-8">
-        {/* Sidebar nav */}
+        {/* Tab nav */}
         <div className="w-full md:w-56 space-y-1 shrink-0">
           {tabs.map((tab) => (
             <button
@@ -94,6 +118,7 @@ export default function Settings() {
 
         <div className="flex-1 space-y-6">
 
+          {/* ── Profile ── */}
           {activeTab === "profile" && (
             <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
               {/* Avatar */}
@@ -122,26 +147,24 @@ export default function Settings() {
                   <CardDescription>Your account information from registration.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-5">
+                  {/* Info notice */}
+                  <div className="flex items-start gap-2 p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 text-xs">
+                    <Info className="h-4 w-4 shrink-0 mt-0.5" />
+                    <span>Display name edits are local only. Email cannot be changed.</span>
+                  </div>
+
                   {!user ? (
-                    <p className="text-sm text-slate-500">Loading user data...</p>
+                    <p className="text-sm text-slate-500">Loading user data…</p>
                   ) : (
                     <>
                       <div className="grid md:grid-cols-2 gap-5">
                         <div className="space-y-2">
                           <label className="text-sm font-medium text-slate-700 dark:text-slate-300">First Name</label>
-                          <Input
-                            value={firstName}
-                            onChange={(e) => setFirstName(e.target.value)}
-                            placeholder="First name"
-                          />
+                          <Input value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="First name" />
                         </div>
                         <div className="space-y-2">
                           <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Last Name</label>
-                          <Input
-                            value={lastName}
-                            onChange={(e) => setLastName(e.target.value)}
-                            placeholder="Last name"
-                          />
+                          <Input value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Last name" />
                         </div>
                       </div>
                       <div className="space-y-2">
@@ -161,27 +184,40 @@ export default function Settings() {
             </div>
           )}
 
+          {/* ── Notifications ── */}
           {activeTab === "notifications" && (
             <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
               <Card>
                 <CardHeader>
                   <CardTitle>Email Notification Preferences</CardTitle>
-                  <CardDescription>Configure which events trigger email alerts.</CardDescription>
+                  <CardDescription>Configure which events trigger email alerts. Preferences are saved locally.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {[
-                    { label: "Document Signed", desc: "When a recipient signs a document." },
-                    { label: "Document Viewed", desc: "When a recipient opens a signing link." },
-                    { label: "Document Rejected", desc: "When a document is rejected." },
+                    { key: "documentSigned", label: "Document Signed", desc: "When a recipient signs a document." },
+                    { key: "documentViewed", label: "Document Viewed", desc: "When a recipient opens a signing link." },
+                    { key: "documentRejected", label: "Document Rejected", desc: "When a document is rejected." },
                   ].map((item) => (
-                    <div key={item.label} className="flex items-center justify-between p-4 rounded-xl border border-border">
+                    <div key={item.key} className="flex items-center justify-between p-4 rounded-xl border border-border">
                       <div>
                         <p className="font-medium text-sm">{item.label}</p>
                         <p className="text-sm text-slate-500">{item.desc}</p>
                       </div>
-                      <div className="h-6 w-11 rounded-full bg-primary-600 relative cursor-pointer flex-shrink-0">
-                        <div className="absolute right-1 top-1 h-4 w-4 rounded-full bg-white shadow-sm" />
-                      </div>
+                      {/* Real interactive toggle */}
+                      <button
+                        onClick={() => togglePref(item.key)}
+                        className={`relative h-6 w-11 rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                          notifPrefs[item.key] ? "bg-primary-600" : "bg-slate-300 dark:bg-slate-600"
+                        }`}
+                        aria-checked={notifPrefs[item.key]}
+                        role="switch"
+                      >
+                        <span
+                          className={`absolute top-1 h-4 w-4 rounded-full bg-white shadow-sm transition-all ${
+                            notifPrefs[item.key] ? "left-6" : "left-1"
+                          }`}
+                        />
+                      </button>
                     </div>
                   ))}
                 </CardContent>
@@ -189,6 +225,7 @@ export default function Settings() {
             </div>
           )}
 
+          {/* ── Security ── */}
           {activeTab === "security" && (
             <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
               <Card>

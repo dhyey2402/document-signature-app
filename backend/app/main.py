@@ -8,6 +8,7 @@ from app.routers.documents import router as documents_router
 from app.routers.signatures import router as signatures_router
 from app.routers.documents_sign import router as documents_sign_router
 from app.routers.signing_links import router as signing_links_router
+from app.routers.reports import router as reports_router
 
 
 from contextlib import asynccontextmanager
@@ -57,6 +58,7 @@ app.include_router(documents_router)
 app.include_router(signatures_router)
 app.include_router(documents_sign_router)
 app.include_router(signing_links_router)
+app.include_router(reports_router)
 
 app.add_middleware(
     CORSMiddleware,

@@ -1,21 +1,18 @@
-import { useState } from "react";
+import { useContext, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { PenTool, Mail, Lock, User } from "lucide-react";
+import { toast } from "react-hot-toast";
+import { AuthContext } from "../context/AuthContext";
 import api from "../services/api";
 import { Input } from "../components/ui/Input";
 import { Button } from "../components/ui/Button";
 
 function Register() {
+  const { login } = useContext(AuthContext);
   const navigate = useNavigate();
 
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    password: "",
-  });
-
-  const [error, setError] = useState("");
+  const [formData, setFormData] = useState({ name: "", email: "", password: "" });
   const [isLoading, setIsLoading] = useState(false);
 
   const handleChange = (e) => {
@@ -25,23 +22,30 @@ function Register() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
-    setError("");
-
     try {
-      await api.post("/auth/register", formData);
-      navigate("/login");
+      const res = await api.post("/auth/register", formData);
+      // auto-login after registration
+      login(res.data.access_token);
+      toast.success("Account created! Welcome to SignFlow.");
+      navigate("/dashboard");
     } catch (err) {
-      setError(err.response?.data?.detail || "Registration failed");
+      const detail = err.response?.data?.detail;
+      toast.error(typeof detail === "string" ? detail : "Registration failed. Please try again.");
     } finally {
       setIsLoading(false);
     }
   };
 
+  // Initials avatar derived from name input
+  const initials = formData.name
+    ? formData.name.trim().split(/\s+/).map((w) => w[0]).join("").toUpperCase().slice(0, 2)
+    : "SF";
+
   return (
     <div className="flex min-h-screen bg-slate-50 dark:bg-slate-950">
-      {/* Right side form (Swapped side for variety) */}
+      {/* Form panel */}
       <div className="flex-1 flex flex-col justify-center items-center p-8 sm:p-12 order-2 lg:order-1">
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
@@ -52,26 +56,12 @@ function Register() {
             <p className="text-slate-500 mt-2">Start sending documents for signature today.</p>
           </div>
 
-          {error && (
-            <div className="mb-6 p-4 rounded-xl bg-error/10 text-error text-sm text-center">
-              {error}
-            </div>
-          )}
-
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="space-y-1">
               <label className="text-sm font-medium">Full Name</label>
               <div className="relative">
                 <User className="absolute left-3 top-2.5 h-5 w-5 text-slate-400" />
-                <Input
-                  type="text"
-                  name="name"
-                  placeholder="John Doe"
-                  className="pl-10"
-                  value={formData.name}
-                  onChange={handleChange}
-                  required
-                />
+                <Input type="text" name="name" placeholder="John Doe" className="pl-10" value={formData.name} onChange={handleChange} required />
               </div>
             </div>
 
@@ -79,15 +69,7 @@ function Register() {
               <label className="text-sm font-medium">Email Address</label>
               <div className="relative">
                 <Mail className="absolute left-3 top-2.5 h-5 w-5 text-slate-400" />
-                <Input
-                  type="email"
-                  name="email"
-                  placeholder="you@company.com"
-                  className="pl-10"
-                  value={formData.email}
-                  onChange={handleChange}
-                  required
-                />
+                <Input type="email" name="email" placeholder="you@company.com" className="pl-10" value={formData.email} onChange={handleChange} required />
               </div>
             </div>
 
@@ -95,20 +77,12 @@ function Register() {
               <label className="text-sm font-medium">Password</label>
               <div className="relative">
                 <Lock className="absolute left-3 top-2.5 h-5 w-5 text-slate-400" />
-                <Input
-                  type="password"
-                  name="password"
-                  placeholder="Create a password"
-                  className="pl-10"
-                  value={formData.password}
-                  onChange={handleChange}
-                  required
-                />
+                <Input type="password" name="password" placeholder="Create a password (min 6 chars)" className="pl-10" value={formData.password} onChange={handleChange} required minLength={6} />
               </div>
             </div>
 
             <Button type="submit" className="w-full h-11" disabled={isLoading}>
-              {isLoading ? "Creating account..." : "Sign up"}
+              {isLoading ? "Creating account…" : "Sign up"}
             </Button>
           </form>
 
@@ -119,11 +93,14 @@ function Register() {
         </motion.div>
       </div>
 
-      {/* Left side illustration (now on the right) */}
+      {/* Illustration panel */}
       <div className="hidden lg:flex w-1/2 relative bg-secondary-900 overflow-hidden items-center justify-center order-1 lg:order-2">
-        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?q=80&w=2070&auto=format&fit=crop')] bg-cover bg-center opacity-20" />
-        <div className="absolute inset-0 bg-gradient-to-t from-secondary-950 via-secondary-900/80 to-transparent" />
-        
+        <div className="absolute inset-0 bg-gradient-to-br from-secondary-950 via-secondary-900 to-primary-900/40" />
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ repeat: Infinity, duration: 60, ease: "linear" }}
+          className="absolute -top-40 -right-40 w-[600px] h-[600px] rounded-full bg-primary-600/10 blur-3xl"
+        />
         <div className="relative z-10 text-white max-w-lg p-12 glass rounded-3xl mx-8 border-slate-700/50 bg-slate-900/50">
           <div className="flex items-center gap-3 mb-6">
             <div className="h-12 w-12 rounded-xl bg-accent-500 flex items-center justify-center shadow-lg shadow-accent-500/20">
@@ -132,11 +109,12 @@ function Register() {
             <h1 className="text-3xl font-bold tracking-tight">SignFlow</h1>
           </div>
           <p className="text-slate-300 text-lg leading-relaxed mb-8">
-            "We reduced our document turnaround time by 40% after switching to SignFlow. The interface is clean, and the automated workflows are a game changer."
+            "We reduced our document turnaround time by 40% after switching to SignFlow. The interface is clean, and the workflows are a game changer."
           </p>
+          {/* Initials avatar — no external image dependency */}
           <div className="flex items-center gap-4">
-            <div className="h-10 w-10 rounded-full bg-slate-700 flex items-center justify-center overflow-hidden">
-               <img src="https://i.pravatar.cc/150?u=sarah" alt="Sarah" className="h-full w-full object-cover" />
+            <div className="h-10 w-10 rounded-full bg-primary-700 flex items-center justify-center text-white font-bold text-sm select-none">
+              SJ
             </div>
             <div>
               <p className="font-medium text-sm">Sarah Jenkins</p>

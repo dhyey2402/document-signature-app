@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import toast from "react-hot-toast";
 import { useParams } from "react-router-dom";
 import { Document, Page, pdfjs } from 'react-pdf';
@@ -36,6 +36,24 @@ function PublicSign() {
   const [signatureFormData, setSignatureFormData] = useState(null);
   const [isSigning, setIsSigning] = useState(false);
   const [signedInfo, setSignedInfo] = useState(null);
+
+  // Responsive PDF width
+  const pdfContainerRef = useRef(null);
+  const [pdfWidth, setPdfWidth] = useState(700);
+
+  const updatePdfWidth = useCallback(() => {
+    if (pdfContainerRef.current) {
+      const w = pdfContainerRef.current.clientWidth;
+      setPdfWidth(Math.min(Math.max(w - 32, 280), 900));
+    }
+  }, []);
+
+  useEffect(() => {
+    updatePdfWidth();
+    const obs = new ResizeObserver(updatePdfWidth);
+    if (pdfContainerRef.current) obs.observe(pdfContainerRef.current);
+    return () => obs.disconnect();
+  }, [updatePdfWidth]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -154,7 +172,10 @@ function PublicSign() {
         <div className="w-full max-w-6xl">
           {loading ? (
             <Card className="text-center py-20">
-              <CardContent className="text-slate-500">Loading secure signing details...</CardContent>
+              <CardContent className="flex flex-col items-center gap-4 text-slate-500">
+                <div className="h-10 w-10 rounded-full border-4 border-primary-200 border-t-primary-600 animate-spin" />
+                <p className="text-sm">Loading secure signing details…</p>
+              </CardContent>
             </Card>
           ) : error ? (
             <div className="mx-auto max-w-md mt-12">
@@ -236,10 +257,10 @@ function PublicSign() {
                     <CardTitle className="text-lg">Review and Place Signature</CardTitle>
                     <CardDescription>Scroll down to preview the document content and placed coordinates.</CardDescription>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent ref={pdfContainerRef}>
                     <div 
                       className="relative border border-slate-200 dark:border-slate-800 rounded bg-slate-100 dark:bg-slate-900 overflow-auto p-4" 
-                      style={{ height: '70vh', minHeight: '500px', width: '100%' }}
+                      style={{ height: '70vh', minHeight: '400px', width: '100%' }}
                     >
                       {pdfPreviewUrl && (
                         <Document 
@@ -259,7 +280,7 @@ function PublicSign() {
                                   pageNumber={pageNumber} 
                                   renderTextLayer={false}
                                   renderAnnotationLayer={false}
-                                  width={700}
+                                  width={pdfWidth}
                                 />
                                 
                                 {/* position overlays using relative coordinate metrics */}

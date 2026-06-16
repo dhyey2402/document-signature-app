@@ -194,9 +194,9 @@ function Documents() {
               <thead>
                 <tr className="border-b bg-slate-50/50 dark:bg-slate-800/30">
                   <th className="text-left text-sm font-medium p-4">Title</th>
-                  <th className="text-left text-sm font-medium p-4">File Name</th>
+                  <th className="text-left text-sm font-medium p-4 hidden md:table-cell">File Name</th>
                   <th className="text-left text-sm font-medium p-4">Status</th>
-                  <th className="text-left text-sm font-medium p-4">Created Date</th>
+                  <th className="text-left text-sm font-medium p-4 hidden sm:table-cell">Created</th>
                   <th className="text-right text-sm font-medium p-4">Actions</th>
                 </tr>
               </thead>
@@ -215,50 +215,46 @@ function Documents() {
                   </tr>
                 ) : filteredDocuments.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="p-6 text-slate-500">
-                      No documents match your search and status filter.
+                    <td colSpan={5} className="p-12 text-center">
+                      <div className="flex flex-col items-center gap-2 text-slate-500">
+                        <svg className="h-10 w-10 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                        <p className="text-sm font-medium">
+                          {query || statusFilter !== "All" ? "No documents match your filters." : "No documents yet."}
+                        </p>
+                        {!query && statusFilter === "All" && (
+                          <a href="/upload" className="text-xs text-primary-600 hover:underline">Upload your first document →</a>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ) : (
                   filteredDocuments.map((doc) => (
-                    <tr key={doc.id} className="border-b last:border-b-0">
+                    <tr key={doc.id} className="border-b last:border-b-0 hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
                       <td className="p-4">
-                        <div className="font-medium text-slate-900 dark:text-white">
-                          {doc.title}
-                        </div>
+                        <div className="font-medium text-slate-900 dark:text-white">{doc.title}</div>
+                        {/* Show file name inline on mobile */}
+                        <div className="text-xs text-slate-400 md:hidden mt-0.5 truncate max-w-[160px]">{doc.file_name}</div>
                       </td>
-                      <td className="p-4 text-slate-600 dark:text-slate-300">
-                        {doc.file_name}
+                      <td className="p-4 text-slate-600 dark:text-slate-300 hidden md:table-cell">
+                        <span className="truncate block max-w-[180px]" title={doc.file_name}>{doc.file_name}</span>
                       </td>
                       <td className="p-4">
                         <Badge variant={statusToBadgeVariant(doc.status)}>
                           {statusToFilterLabel(doc.status)}
                         </Badge>
                       </td>
-                      <td className="p-4 text-slate-600 dark:text-slate-300">
+                      <td className="p-4 text-slate-600 dark:text-slate-300 hidden sm:table-cell">
                         {doc.created_at ? new Date(doc.created_at).toLocaleDateString() : "—"}
                       </td>
                       <td className="p-4">
                         <div className="flex justify-end gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            asChild
-                          >
+                          <Button variant="outline" size="sm" asChild>
                             <Link to={`/documents/${doc.id}`}>View</Link>
                           </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleDownload(doc.id)}
-                          >
+                          <Button variant="outline" size="sm" onClick={() => handleDownload(doc.id)} className="hidden sm:inline-flex">
                             Download
                           </Button>
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => openDelete(doc)}
-                          >
+                          <Button variant="destructive" size="sm" onClick={() => openDelete(doc)}>
                             Delete
                           </Button>
                         </div>

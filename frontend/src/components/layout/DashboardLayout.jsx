@@ -1,10 +1,10 @@
 import { useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
-import { Sidebar } from "./Sidebar";
+import { Sidebar, MobileSidebar } from "./Sidebar";
 import { Navbar } from "./Navbar";
 import { useSidebar } from "./useSidebar";
 
-// Routes that should auto-collapse the sidebar for maximum content space
+// Routes that auto-collapse the sidebar for maximum content space
 const IMMERSIVE_ROUTES = [/^\/documents\/\d+$/];
 
 function isImmersive(pathname) {
@@ -12,21 +12,20 @@ function isImmersive(pathname) {
 }
 
 export function DashboardLayout({ children }) {
-  const { collapsed, toggle, setCollapsed } = useSidebar();
+  const { collapsed, toggle, setCollapsed, mobileOpen, openMobile, closeMobile } = useSidebar();
   const location = useLocation();
-
-  // Track whether we auto-collapsed so we can restore on exit
   const autoCollapsed = useRef(false);
 
   useEffect(() => {
+    // Close mobile drawer on route change
+    closeMobile();
+
     if (isImmersive(location.pathname)) {
-      // Entering a document detail — collapse if currently expanded
       if (!collapsed) {
         autoCollapsed.current = true;
         setCollapsed(true);
       }
     } else {
-      // Leaving an immersive route — restore if we were the ones who collapsed it
       if (autoCollapsed.current) {
         autoCollapsed.current = false;
         setCollapsed(false);
@@ -37,10 +36,15 @@ export function DashboardLayout({ children }) {
 
   return (
     <div className="flex h-screen w-full bg-slate-50 dark:bg-slate-900 overflow-hidden">
+      {/* Desktop sidebar */}
       <Sidebar collapsed={collapsed} onToggle={toggle} />
+
+      {/* Mobile drawer */}
+      <MobileSidebar open={mobileOpen} onClose={closeMobile} />
+
       <div className="flex flex-col flex-1 h-full min-w-0 overflow-hidden">
-        <Navbar />
-        <main className="flex-1 overflow-y-auto p-6">
+        <Navbar onMenuClick={openMobile} />
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6">
           {children}
         </main>
       </div>

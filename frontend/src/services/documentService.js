@@ -35,3 +35,7 @@ export const rejectDocument = async (documentId, reason) =>
 export const getNotifications = async () => api.get("/documents/notifications");
 
 export const getSigningLinks = async () => api.get("/signing-links/");
+
+export const downloadDashboardReport = async () =>
+  api.get("/reports/dashboard", { responseType: "blob" });
+

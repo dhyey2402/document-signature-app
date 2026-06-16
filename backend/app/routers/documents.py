@@ -89,7 +89,9 @@ def upload_document(
     db.refresh(document)
 
     return {
-        "message": "Document uploaded successfully."
+        "message": "Document uploaded successfully.",
+        "id": document.id,
+        "title": document.title,
     }
 
 

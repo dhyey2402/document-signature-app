@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import toast from "react-hot-toast";
 import { useParams, Link } from "react-router-dom";
 import { Document, Page, pdfjs } from 'react-pdf';
@@ -172,6 +172,25 @@ function DocumentDetail() {
   const [rejectOpen, setRejectOpen] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
   const [isRejecting, setIsRejecting] = useState(false);
+
+  // Responsive PDF width
+  const pdfContainerRef = useRef(null);
+  const [pdfWidth, setPdfWidth] = useState(700);
+
+  const updatePdfWidth = useCallback(() => {
+    if (pdfContainerRef.current) {
+      const w = pdfContainerRef.current.clientWidth;
+      // subtract horizontal padding (32px) and clamp between 300–900
+      setPdfWidth(Math.min(Math.max(w - 32, 300), 900));
+    }
+  }, []);
+
+  useEffect(() => {
+    updatePdfWidth();
+    const observer = new ResizeObserver(updatePdfWidth);
+    if (pdfContainerRef.current) observer.observe(pdfContainerRef.current);
+    return () => observer.disconnect();
+  }, [updatePdfWidth]);
 
   const fetchAuditLog = async (docId) => {
     setAuditLoading(true);
@@ -428,12 +447,12 @@ function DocumentDetail() {
                 <CardTitle className="text-lg">Document Preview</CardTitle>
                 <CardDescription>Drag and drop the signature placeholder onto a specific document page.</CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent ref={pdfContainerRef}>
                 <div
                   onMouseUp={handleMouseUp}
                   onMouseLeave={handleMouseUp}
                   className="relative border border-slate-200 dark:border-slate-800 rounded bg-slate-100 dark:bg-slate-900 overflow-auto p-4"
-                  style={{ height: '70vh', minHeight: '500px', width: '100%' }}
+                  style={{ height: '70vh', minHeight: '400px', width: '100%' }}
                 >
                   {pdfPreviewUrl && (
                     <Document
@@ -456,7 +475,7 @@ function DocumentDetail() {
                               pageNumber={pageNumber}
                               renderTextLayer={false}
                               renderAnnotationLayer={false}
-                              width={700}
+                              width={pdfWidth}
                             />
 
                             {savedSignatures.filter(sig => sig.page_number === pageNumber).map(sig => (
@@ -691,9 +710,6 @@ function DocumentDetail() {
                     }}
                   />
 
-                  {signatureAssetId && (
-                    <div className="text-xs text-slate-500">Asset ID: {signatureAssetId}</div>
-                  )}
 
                   <div className="pt-2 flex gap-2">
                     <Button
