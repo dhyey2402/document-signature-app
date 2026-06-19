@@ -9,6 +9,7 @@ from app.routers.signatures import router as signatures_router
 from app.routers.documents_sign import router as documents_sign_router
 from app.routers.signing_links import router as signing_links_router
 from app.routers.reports import router as reports_router
+from app.core.config import FRONTEND_URL
 
 
 from contextlib import asynccontextmanager
@@ -60,12 +61,15 @@ app.include_router(documents_sign_router)
 app.include_router(signing_links_router)
 app.include_router(reports_router)
 
+# Build CORS origins from FRONTEND_URL; always include localhost for local dev.
+cors_origins = list({
+    "http://localhost:5173",
+    FRONTEND_URL,
+})
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-    "http://localhost:5173",
-    "https://signly-omega.vercel.app",
-    ],
+    allow_origins=cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

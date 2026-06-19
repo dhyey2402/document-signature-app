@@ -23,7 +23,7 @@ from app.services.audit_service import (
     DOCUMENT_DOWNLOADED,
     SIGNED_DOCUMENT_DOWNLOADED,
 )
-from app.core.config import SIGNATURES_DIR
+from app.core.config import SIGNATURES_DIR, FRONTEND_URL
 
 router = APIRouter(prefix="/api/signing-links", tags=["Signing Links"])
 
@@ -107,7 +107,7 @@ def generate_signing_link(
     db.commit()
     db.refresh(link)
 
-    public_url = f"http://localhost:5173/sign/{link.token}"
+    public_url = f"{FRONTEND_URL}/sign/{link.token}"
 
     # dispatch notification email
     email_sent = send_signing_email(
