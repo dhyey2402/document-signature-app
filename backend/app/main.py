@@ -64,7 +64,9 @@ app.include_router(reports_router)
 # Build CORS origins from FRONTEND_URL; always include localhost for local dev.
 cors_origins = list({
     "http://localhost:5173",
+    "http://127.0.0.1:5173",
     FRONTEND_URL,
+    FRONTEND_URL.rstrip("/"),
 })
 
 app.add_middleware(
